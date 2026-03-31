@@ -1,14 +1,23 @@
 {
-  "input_xml": "quantity.xml",
-  "output_xml": "quantity_modified.xml",
-  "ftp_host": "ftp.lacnekable.sk",
-  "ftp_user": "stavy.lacnekable.sk",
-  "ftp_pass": "ERT159cvb7",
-  "destination": "/quantity/quantity.xml",
-  "element_paths": [
+  "nazov_vstupneho_suboru": "quantity.xml",
+  "nazov_vystupneho_suboru": "quantity_modified.xml",
+  "ftp_server": "ftp.lacnekable.sk",
+  "ftp_uzivatel": "stavy.lacnekable.sk",
+  "ftp_heslo": "ERT159cvb7",
+  "ftp_ciel": "/quantity/quantity.xml",
+  "elementy_ciarka_na_bodku": [
     "SHOPITEM/LOGISTIC/WEIGHT",
     "SHOPITEM/PRICE_VAT",
     "SHOPITEM/PURCHASE_PRICE",
     "SHOPITEM/PRICELISTS/PRICELIST/PRICE_VAT"
-  ]
+  ],
+  "predvolene_hodnoty_prazdnych": {
+    "SHOPITEM/STOCK/AMOUNT": "0"
+  },
+  "pravidla_zaokruhlovania": {
+    "SHOPITEM/PRICE_VAT": 2,
+    "SHOPITEM/PURCHASE_PRICE": 2,
+    "SHOPITEM/PRICELISTS/PRICELIST/PRICE_VAT": 2,
+    "SHOPITEM/LOGISTIC/WEIGHT": 2
+  }
 }
