@@ -60,11 +60,7 @@ def apply_empty_defaults(root, empty_value_defaults):
     changed_count = 0
 
     for raw_path, default_value in empty_value_defaults.items():
-        path = raw_path.strip().strip("/")
-        if not path:
-            continue
-
-        parts = [p for p in path.split("/") if p]
+        parts = [p for p in raw_path.strip("/").split("/") if p]
         matches = find_matching_elements(root, parts)
 
         for elem in matches:
@@ -79,11 +75,7 @@ def apply_rounding(root, rounding_rules):
     changed_count = 0
 
     for raw_path, places in rounding_rules.items():
-        path = raw_path.strip().strip("/")
-        if not path:
-            continue
-
-        parts = [p for p in path.split("/") if p]
+        parts = [p for p in raw_path.strip("/").split("/") if p]
         matches = find_matching_elements(root, parts)
 
         for elem in matches:
@@ -97,18 +89,14 @@ def apply_rounding(root, rounding_rules):
     return changed_count
 
 
-def modify_xml(input_xml, output_xml, element_paths, empty_value_defaults=None, rounding_rules=None):
+def modify_xml(input_xml, output_xml, comma_to_dot_elements, empty_value_defaults=None, rounding_rules=None):
     tree = ET.parse(input_xml)
     root = tree.getroot()
 
     changed_count = 0
 
-    for raw_path in element_paths:
-        path = raw_path.strip().strip("/")
-        if not path:
-            continue
-
-        parts = [p for p in path.split("/") if p]
+    for raw_path in comma_to_dot_elements:
+        parts = [p for p in raw_path.strip("/").split("/") if p]
         matches = find_matching_elements(root, parts)
 
         for elem in matches:
@@ -196,7 +184,12 @@ def main():
 
         input_xml = config.get("input_xml") or config.get("input name")
         output_xml = config.get("output_xml") or config.get("output name")
-        element_paths = config.get("element_paths") or config.get("elements") or []
+        comma_to_dot_elements = (
+            config.get("comma_to_dot_elements")
+            or config.get("element_paths")
+            or config.get("elements")
+            or []
+        )
         empty_value_defaults = config.get("empty_value_defaults", {})
         rounding_rules = config.get("rounding_rules", {})
 
@@ -204,8 +197,8 @@ def main():
             raise ValueError("Chýba input_xml (alebo input name) v configu.")
         if not output_xml:
             raise ValueError("Chýba output_xml (alebo output name) v configu.")
-        if not isinstance(element_paths, list) or not element_paths:
-            raise ValueError("Chýba element_paths v configu alebo je prázdny.")
+        if not isinstance(comma_to_dot_elements, list) or not comma_to_dot_elements:
+            raise ValueError("Chýba comma_to_dot_elements v configu alebo je prázdny.")
 
         if not os.path.exists(input_xml):
             raise FileNotFoundError(f"Vstupný XML súbor neexistuje: {input_xml}")
@@ -213,7 +206,7 @@ def main():
         changed = modify_xml(
             input_xml,
             output_xml,
-            element_paths,
+            comma_to_dot_elements,
             empty_value_defaults=empty_value_defaults,
             rounding_rules=rounding_rules
         )
