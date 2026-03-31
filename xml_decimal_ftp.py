@@ -10,13 +10,13 @@ def load_config(config_path: str = "config.json") -> dict:
         return json.load(f)
 
 
-def normalize_decimal_text(text: str | None) -> str | None:
+def normalize_decimal_text(text):
     if text is None:
         return text
     return text.replace(",", ".")
 
 
-def find_matching_elements(root: ET.Element, path_parts: list[str]) -> list[ET.Element]:
+def find_matching_elements(root, path_parts):
     """
     Nájde elementy podľa cesty typu:
     SHOPITEM/LOGISTIC/WEIGHT
@@ -36,7 +36,7 @@ def find_matching_elements(root: ET.Element, path_parts: list[str]) -> list[ET.E
     return current
 
 
-def modify_xml(input_xml: str, output_xml: str, element_paths: list[str]) -> int:
+def modify_xml(input_xml, output_xml, element_paths):
     tree = ET.parse(input_xml)
     root = tree.getroot()
 
@@ -58,20 +58,25 @@ def modify_xml(input_xml: str, output_xml: str, element_paths: list[str]) -> int
                 elem.text = updated
                 changed_count += 1
 
-    tree.write(output_xml, encoding="utf-8", xml_declaration=True)
+    tree.write(
+        output_xml,
+        encoding="utf-8",
+        xml_declaration=True,
+        short_empty_elements=False
+    )
     return changed_count
 
 
-def split_remote_destination(config: dict) -> tuple[str, str]:
+def split_remote_destination(config):
     """
     Podpora dvoch možností:
     1. ftp_remote_dir + ftp_remote_filename
     2. destination = /quantity/quantity.xml
     """
-    remote_dir = config.get("ftp_remote_dir", "").strip()
-    remote_filename = config.get("ftp_remote_filename", "").strip()
+    remote_dir = str(config.get("ftp_remote_dir", "")).strip()
+    remote_filename = str(config.get("ftp_remote_filename", "")).strip()
 
-    destination = config.get("destination", "").strip()
+    destination = str(config.get("destination", "")).strip()
 
     if destination and (not remote_dir or not remote_filename):
         normalized = destination.replace("\\", "/").rstrip("/")
@@ -92,7 +97,7 @@ def split_remote_destination(config: dict) -> tuple[str, str]:
     return remote_dir, remote_filename
 
 
-def upload_to_ftp(config: dict) -> None:
+def upload_to_ftp(config):
     ftp_host = config["ftp_host"]
     ftp_user = config.get("ftp_username") or config.get("ftp_user")
     ftp_pass = config.get("ftp_password") or config.get("ftp_pass")
@@ -120,7 +125,7 @@ def upload_to_ftp(config: dict) -> None:
             ftp.close()
 
 
-def main() -> int:
+def main():
     try:
         config_path = "config.json"
         if len(sys.argv) > 1:
