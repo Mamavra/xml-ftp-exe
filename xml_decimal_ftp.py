@@ -17,11 +17,6 @@ def normalize_decimal_text(text):
 
 
 def find_matching_elements(root, path_parts):
-    """
-    Nájde elementy podľa cesty typu:
-    SHOPITEM/LOGISTIC/WEIGHT
-    SHOPITEM/PRICELISTS/PRICELIST/PRICE_VAT
-    """
     current = [root]
 
     for part in path_parts:
@@ -36,7 +31,26 @@ def find_matching_elements(root, path_parts):
     return current
 
 
-def modify_xml(input_xml, output_xml, element_paths):
+def apply_empty_defaults(root, empty_value_defaults):
+    changed_count = 0
+
+    for raw_path, default_value in empty_value_defaults.items():
+        path = raw_path.strip().strip("/")
+        if not path:
+            continue
+
+        parts = [p for p in path.split("/") if p]
+        matches = find_matching_elements(root, parts)
+
+        for elem in matches:
+            if elem.text is None or elem.text.strip() == "":
+                elem.text = str(default_value)
+                changed_count += 1
+
+    return changed_count
+
+
+def modify_xml(input_xml, output_xml, element_paths, empty_value_defaults=None):
     tree = ET.parse(input_xml)
     root = tree.getroot()
 
@@ -58,6 +72,9 @@ def modify_xml(input_xml, output_xml, element_paths):
                 elem.text = updated
                 changed_count += 1
 
+    if empty_value_defaults:
+        changed_count += apply_empty_defaults(root, empty_value_defaults)
+
     tree.write(
         output_xml,
         encoding="utf-8",
@@ -68,11 +85,6 @@ def modify_xml(input_xml, output_xml, element_paths):
 
 
 def split_remote_destination(config):
-    """
-    Podpora dvoch možností:
-    1. ftp_remote_dir + ftp_remote_filename
-    2. destination = /quantity/quantity.xml
-    """
     remote_dir = str(config.get("ftp_remote_dir", "")).strip()
     remote_filename = str(config.get("ftp_remote_filename", "")).strip()
 
@@ -115,7 +127,6 @@ def upload_to_ftp(config):
         ftp.cwd(remote_dir)
 
         with open(local_file, "rb") as f:
-            # quantity_modified.xml sa uloží na FTP ako quantity.xml
             ftp.storbinary(f"STOR {remote_filename}", f)
 
     finally:
@@ -136,6 +147,7 @@ def main():
         input_xml = config.get("input_xml") or config.get("input name")
         output_xml = config.get("output_xml") or config.get("output name")
         element_paths = config.get("element_paths") or config.get("elements") or []
+        empty_value_defaults = config.get("empty_value_defaults", {})
 
         if not input_xml:
             raise ValueError("Chýba input_xml (alebo input name) v configu.")
@@ -147,7 +159,7 @@ def main():
         if not os.path.exists(input_xml):
             raise FileNotFoundError(f"Vstupný XML súbor neexistuje: {input_xml}")
 
-        changed = modify_xml(input_xml, output_xml, element_paths)
+        changed = modify_xml(input_xml, output_xml, element_paths, empty_value_defaults)
         print(f"XML upravené. Zmenených hodnôt: {changed}")
         print(f"Lokálny výstup: {output_xml}")
 
