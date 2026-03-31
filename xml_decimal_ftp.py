@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import xml.etree.ElementTree as ET
 from ftplib import FTP
 
@@ -14,6 +15,30 @@ def normalize_decimal_text(text):
     if text is None:
         return text
     return text.replace(",", ".")
+
+
+def round_decimal_text(text, places):
+    if text is None:
+        return text
+
+    cleaned = text.strip()
+    if cleaned == "":
+        return text
+
+    normalized = cleaned.replace(",", ".")
+
+    try:
+        value = Decimal(normalized)
+    except InvalidOperation:
+        return normalized
+
+    quant = Decimal("1") if int(places) == 0 else Decimal("1." + ("0" * int(places)))
+    rounded = value.quantize(quant, rounding=ROUND_HALF_UP)
+
+    if int(places) == 0:
+        return str(rounded.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+    return f"{rounded:.{int(places)}f}"
 
 
 def find_matching_elements(root, path_parts):
@@ -50,7 +75,29 @@ def apply_empty_defaults(root, empty_value_defaults):
     return changed_count
 
 
-def modify_xml(input_xml, output_xml, element_paths, empty_value_defaults=None):
+def apply_rounding(root, rounding_rules):
+    changed_count = 0
+
+    for raw_path, places in rounding_rules.items():
+        path = raw_path.strip().strip("/")
+        if not path:
+            continue
+
+        parts = [p for p in path.split("/") if p]
+        matches = find_matching_elements(root, parts)
+
+        for elem in matches:
+            original = elem.text
+            rounded = round_decimal_text(original, places)
+
+            if rounded != original and rounded is not None:
+                elem.text = rounded
+                changed_count += 1
+
+    return changed_count
+
+
+def modify_xml(input_xml, output_xml, element_paths, empty_value_defaults=None, rounding_rules=None):
     tree = ET.parse(input_xml)
     root = tree.getroot()
 
@@ -74,6 +121,9 @@ def modify_xml(input_xml, output_xml, element_paths, empty_value_defaults=None):
 
     if empty_value_defaults:
         changed_count += apply_empty_defaults(root, empty_value_defaults)
+
+    if rounding_rules:
+        changed_count += apply_rounding(root, rounding_rules)
 
     tree.write(
         output_xml,
@@ -148,6 +198,7 @@ def main():
         output_xml = config.get("output_xml") or config.get("output name")
         element_paths = config.get("element_paths") or config.get("elements") or []
         empty_value_defaults = config.get("empty_value_defaults", {})
+        rounding_rules = config.get("rounding_rules", {})
 
         if not input_xml:
             raise ValueError("Chýba input_xml (alebo input name) v configu.")
@@ -159,7 +210,13 @@ def main():
         if not os.path.exists(input_xml):
             raise FileNotFoundError(f"Vstupný XML súbor neexistuje: {input_xml}")
 
-        changed = modify_xml(input_xml, output_xml, element_paths, empty_value_defaults)
+        changed = modify_xml(
+            input_xml,
+            output_xml,
+            element_paths,
+            empty_value_defaults=empty_value_defaults,
+            rounding_rules=rounding_rules
+        )
         print(f"XML upravené. Zmenených hodnôt: {changed}")
         print(f"Lokálny výstup: {output_xml}")
 
