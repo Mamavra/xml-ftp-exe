@@ -1,0 +1,14 @@
+{
+  "input_xml": "quantity.xml",
+  "output_xml": "quantity_modified.xml",
+  "ftp_host": "ftp.lacnekable.sk",
+  "ftp_user": "stavy.lacnekable.sk",
+  "ftp_pass": "ERT159cvb7",
+  "destination": "/quantity/quantity.xml",
+  "element_paths": [
+    "SHOPITEM/LOGISTIC/WEIGHT",
+    "SHOPITEM/PRICE_VAT",
+    "SHOPITEM/PURCHASE_PRICE",
+    "SHOPITEM/PRICELISTS/PRICELIST/PRICE_VAT"
+  ]
+}
